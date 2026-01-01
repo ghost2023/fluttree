@@ -63,14 +63,6 @@ ${toMermaid(res).join("\n")}
   await Bun.write(outFile, mermaid);
 }
 
-const mermaid = `
-graph LR
-${toMermaid(res).join("\n")}
-`;
-
-await Bun.write("graph.mmd", mermaid);
-
-Bun.file("res.json").write(JSON.stringify(res, null, 2));
 const unused = allProjectFiles.filter((f) => !visited.has(f));
 console.log("left files:");
 unused.forEach((f) => console.log("  " + f));
