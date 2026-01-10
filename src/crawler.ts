@@ -1,6 +1,5 @@
 import { join } from "node:path";
 import { resolveImport } from "./resolver";
-import { request } from "node:http";
 
 const importRegex = /^\s*import\s+['"](?<uri>[^'"]+)['"][^;]*;/gm;
 
@@ -13,17 +12,30 @@ export class DependencyCrawler {
   public visited = new Set<string>();
   public limit = 10000;
   public debug = false;
+  private ignorePatterns: Bun.Glob[] = [];
+
+  set ignore(patterns: string[]) {
+    this.ignorePatterns = patterns.map((p) => new Bun.Glob(p));
+  }
 
   constructor(
     private rootPath: string,
     private projectName: string,
-  ) { }
+  ) {}
 
   async crawl(
     fileRelativePath: string,
     parents: string[] = [],
     callIndex = 0,
   ): Promise<Record<string, any>> {
+    const isIgnored = this.ignorePatterns.some((g) =>
+      g.match(fileRelativePath),
+    );
+    if (isIgnored) {
+      if (this.debug) console.log(`Ignoring ${fileRelativePath}`);
+      return {};
+    }
+
     if (
       parents.includes(fileRelativePath) ||
       this.visited.has(fileRelativePath)
@@ -57,7 +69,7 @@ export class DependencyCrawler {
 
     return {
       file: fileRelativePath,
-      children: promises,
+      children: promises.filter((p) => p.file),
     };
   }
 

@@ -30,6 +30,11 @@ const { values } = parseArgs({
       default: false,
       short: "d",
     },
+    ignore: {
+      type: "string",
+      multiple: true,
+      short: "i",
+    },
   },
   strict: true,
   allowPositionals: true,
@@ -45,13 +50,20 @@ const pubspecYaml = Bun.YAML.parse(await pubspecFile.text()) as {
 
 const projectName = pubspecYaml.name;
 
+const ignorePatterns = values.ignore ?? [];
+const ignoreGlobs = ignorePatterns.map((p) => new Bun.Glob(p));
+
 const glob = new Bun.Glob("**/*.dart");
 let allProjectFiles = await Array.fromAsync(glob.scan(rootPath));
+allProjectFiles = allProjectFiles.filter(
+  (file) => !ignoreGlobs.some((g) => g.match(file)),
+);
 
 const crawler = new DependencyCrawler(rootPath, projectName);
 if (values.debug) crawler.debug = true;
 if (Number.parseInt(values.limit) > 0)
   crawler.limit = Number.parseInt(values.limit);
+crawler.ignore = ignorePatterns;
 const res = await crawler.crawl(values.startFile);
 
 const outFile = values.output;
