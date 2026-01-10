@@ -28,7 +28,10 @@ export class DependencyCrawler {
       parents.includes(fileRelativePath) ||
       this.visited.has(fileRelativePath)
     ) {
-      return {};
+      return {
+        file: fileRelativePath,
+        children: [],
+      };
     }
 
     if (callIndex > this.limit) {
